@@ -1,6 +1,14 @@
 import express from "express";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
+import {
+  getMentor,
+  getStudent,
+  getStudents,
+  getStudentsbyMentorName,
+  updateMentor,
+  updateStudent,
+} from "./helper.js";
 
 const app = express();
 dotenv.config();
@@ -63,36 +71,69 @@ app.post("/createMentor", async function (req, res) {
 });
 
 app.put("/assignMentor", async function (req, res) {
-  const Mentor = req.body;
+  const mentor = req.body;
+  const mentorName = { MentorName: mentor.MentorName };
 
   const findStudent = await client
     .db("StudentMentorAPI")
     .collection("student")
     .findOne({ MentorName: "" });
+  if (!findStudent) {
+    res.send({ message: "All students are assigned to concern mentor" });
+    return;
+  }
+  const student = findStudent.StudentName;
+
+  const findMentor = await getMentor(mentor.MentorName);
+  findMentor.Students.push(student);
+  const updatedMentor = await updateMentor(mentor.MentorName, findMentor);
+  const updatedStudent = await updateStudent(student, mentorName);
+
+  res.send(findMentor);
+});
+
+app.get("/StudentsOfMentor/:mentorName", async function (request, response) {
+  const { mentorName } = request.params;
+  const result = await getStudentsbyMentorName(mentorName);
+  response.send(result);
+});
+
+app.put("/updateMentor/:StudentName", async function (request, response) {
+  const Mentor = request.body;
+  const { StudentName } = request.params;
+  const findStudent = await getStudent(StudentName);
 
   const Student = findStudent.StudentName;
-  const findMentor = await client
-    .db("StudentMentorAPIb39we")
-    .collection("mentor")
-    .findOne({ MentorName: Mentor.MentorName });
+  const PreviousMentor = findStudent.MentorName;
 
-  const mentorName = { MentorName: Mentor.MentorName };
-  console.log(findMentor);
-  findMentor.Students =
-    typeof findStudent.Students === typeof []
-      ? [Student]
-      : findStudent.Students.push(Student);
-  console.log(Student);
-  const updateMentor = await client
-    .db("StudentMentorAPI")
-    .collection("mentor")
-    .updateOne({ MentorName: Mentor.MentorName }, { $set: findMentor });
+  const findpreviousMentor = await getMentor(PreviousMentor);
+  findpreviousMentor.Students.pop(Student);
+  const updatePreviousMentor = await updateMentor(
+    PreviousMentor,
+    findpreviousMentor
+  );
 
-  const updateStudent = await client
-    .db("StudentMentorAPI")
-    .collection("student")
-    .updateOne({ StudentName: Student }, { $set: mentorName });
-  res.send(updateMentor);
+  const findMentor = await getMentor(Mentor.MentorName);
+  findMentor.Students.push(Student);
+  const updatedMentor = await updateMentor(Mentor.MentorName, findMentor);
+
+  const newMentorName = {
+    PreviousMentor: PreviousMentor,
+    MentorName: Mentor.MentorName,
+  };
+  const updatedStudent = await updateStudent(Student, newMentorName);
+  response.send(findMentor);
+});
+
+app.get("/PreviousMentor/:StudentName", async function (request, response) {
+  const { StudentName } = request.params;
+  const result = await getStudent(StudentName);
+  result
+    ? response.send({
+        StudentName: StudentName,
+        PreviousMentor: result.PreviousMentor,
+      })
+    : response.send({ message: "No Student available with that name" });
 });
 
 app.listen(PORT, () => console.log(`The server started in: ${PORT}`));
