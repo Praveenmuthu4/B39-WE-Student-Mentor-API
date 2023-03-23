@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 import {
   getMentor,
   getStudent,
-  getStudents,
   getStudentsbyMentorName,
   updateMentor,
   updateStudent,
@@ -98,42 +97,42 @@ app.get("/StudentsOfMentor/:mentorName", async function (request, response) {
   response.send(result);
 });
 
-app.put("/updateMentor/:StudentName", async function (request, response) {
-  const Mentor = request.body;
-  const { StudentName } = request.params;
+app.put("/updateMentor/:StudentName", async function (req, res) {
+  const mentor = req.body;
+  const { StudentName } = req.params;
   const findStudent = await getStudent(StudentName);
 
-  const Student = findStudent.StudentName;
+  const student = findStudent.StudentName;
   const PreviousMentor = findStudent.MentorName;
 
   const findpreviousMentor = await getMentor(PreviousMentor);
-  findpreviousMentor.Students.pop(Student);
+  findpreviousMentor.Students.pop(student);
   const updatePreviousMentor = await updateMentor(
     PreviousMentor,
     findpreviousMentor
   );
 
-  const findMentor = await getMentor(Mentor.MentorName);
-  findMentor.Students.push(Student);
-  const updatedMentor = await updateMentor(Mentor.MentorName, findMentor);
+  const findMentor = await getMentor(mentor.MentorName);
+  findMentor.Students.push(student);
+  const updatedMentor = await updateMentor(mentor.MentorName, findMentor);
 
   const newMentorName = {
     PreviousMentor: PreviousMentor,
-    MentorName: Mentor.MentorName,
+    MentorName: mentor.MentorName,
   };
-  const updatedStudent = await updateStudent(Student, newMentorName);
-  response.send(findMentor);
+  const updatedStudent = await updateStudent(student, newMentorName);
+  res.send(findMentor);
 });
 
-app.get("/PreviousMentor/:StudentName", async function (request, response) {
-  const { StudentName } = request.params;
+app.get("/PreviousMentor/:StudentName", async function (req, res) {
+  const { StudentName } = req.params;
   const result = await getStudent(StudentName);
   result
-    ? response.send({
+    ? res.send({
         StudentName: StudentName,
         PreviousMentor: result.PreviousMentor,
       })
-    : response.send({ message: "No Student available with that name" });
+    : res.send({ message: "No Student available with that name" });
 });
 
 app.listen(PORT, () => console.log(`The server started in: ${PORT}`));

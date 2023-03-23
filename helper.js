@@ -41,7 +41,7 @@ export async function getStudent(StudentName) {
   return await client
     .db("StudentMentorAPI")
     .collection("student")
-    .findOne({ Students: StudentName });
+    .findOne({ StudentName: StudentName });
 }
 
 export async function getStudentsbyMentorName(id) {
