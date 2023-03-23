@@ -46,7 +46,7 @@ export async function getStudent(StudentName) {
 
 export async function getStudentsbyMentorName(id) {
     return await client
-      .db("StudentMentorAPIb39we")
+      .db("StudentMentorAPI")
       .collection("student")
       .find({ MentorName: id })
       .toArray();
